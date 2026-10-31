@@ -12,19 +12,7 @@ Allocations · Rent · Complaints · Visitors · Meals — **MySQL** for transac
 ![MySQL](https://img.shields.io/badge/MySQL-8-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
 
-*DBMS Experiential Learning – Level 3 Project · PES University, Dept. of CSE · Instructor: Dr. Nagasundari S*
-
 </div>
-
-<p align="center">
-  <img src="docs/screenshots/01-login.png" alt="Login page" width="49%">
-  <img src="docs/screenshots/02-admin-dashboard.png" alt="Admin dashboard" width="49%">
-</p>
-
----
-
-## 📑 Table of contents
-[Why this project](#-why-this-project) · [Features](#-features) · [Architecture](#-architecture) · [Quick start](#-quick-start) · [Demo accounts](#-demo-accounts) · [Database highlights](#-database-highlights) · [Screenshots](#-screenshots) · [Project structure](#-project-structure) · [Testing](#-testing) · [Troubleshooting](#-troubleshooting) · [Team](#-team)
 
 ---
 
@@ -37,14 +25,14 @@ This system gives owners, staff and residents one place to manage all of it — 
 
 | | |
 |---|---|
-| 🛏️ **Bed allocation** | Allocate, transfer, check out or cancel — every action is an atomic MySQL transaction that can never double-book a bed |
-| 💳 **Rent & payments** | One-click monthly rent generation (idempotent), mark paid, live dues and overdue tracking |
-| 🛠️ **Complaints** | Residents file complaints; staff change status/priority, reply and keep internal notes. Full-text search. Timeline stored in MongoDB |
-| 🚪 **Visitor register** | Check-in / check-out, linked to residents, with history |
-| 🍽️ **Meal menus** | Weekly menus and dishes; residents rate meals (1–5 stars + tags); averages via MongoDB aggregation |
-| 📊 **Dashboards & reports** | Occupancy, revenue, complaints by priority, licence alerts, rent by room type, dues above average |
-| 🔐 **Role-based access** | Admin, Staff and Resident roles with server-side checks on every API route |
-| 🧾 **Audit log** | Every sign-in and data change recorded as a flexible document in MongoDB |
+| **Bed allocation** | Allocate, transfer, check out or cancel — every action is an atomic MySQL transaction that can never double-book a bed |
+| **Rent & payments** | One-click monthly rent generation (idempotent), mark paid, live dues and overdue tracking |
+| **Complaints** | Residents file complaints; staff change status/priority, reply and keep internal notes. Full-text search. Timeline stored in MongoDB |
+| **Visitor register** | Check-in / check-out, linked to residents, with history |
+| **Meal menus** | Weekly menus and dishes; residents rate meals (1–5 stars + tags); averages via MongoDB aggregation |
+| **Dashboards & reports** | Occupancy, revenue, complaints by priority, licence alerts, rent by room type, dues above average |
+| **Role-based access** | Admin, Staff and Resident roles with server-side checks on every API route |
+| **Audit log** | Every sign-in and data change recorded as a flexible document in MongoDB |
 
 ### 👥 Roles
 
@@ -101,15 +89,6 @@ Seeded into MongoDB as bcrypt hashes. On the login page you can click **Admin / 
 
 Change them with `SEED_*_PASSWORD` in `.env` before seeding.
 
-### 📝 Creating a new account
-The login page has a **Create account** option:
-
-- **Resident** – enter a Resident ID that already exists in the `RESIDENT` table
-- **Staff** – enter an existing Staff ID and the `STAFF_SIGNUP_CODE` from `.env`
-- **Admin** – enter a name and the `ADMIN_SIGNUP_CODE` from `.env`
-
-Choose private values for both codes in `.env`. Usernames are unique, passwords are bcrypt-hashed, and a new user is signed in immediately.
-
 ## 🗄️ Database highlights
 
 | MySQL 8 (relational core) | MongoDB 7 (document store) |
@@ -153,25 +132,12 @@ npm run check        # environment check before a demo
 
 The tests verify that the live schema matches the relational schema (tables, columns, PKs, FKs), that triggers and constraints reject bad data, that failed transactions roll back, that MySQL ↔ MongoDB references are consistent, that every sidebar link has a page, that every API route checks the session, and that no credentials are hard-coded.
 
-## 🩺 Troubleshooting
-
-| Message | Fix |
-|---|---|
-| *Database is not reachable* | Start MySQL and MongoDB, then run `npm run check` |
-| *MySQL refused the login* | Fix `MYSQL_USER` / `MYSQL_PASSWORD` in `.env` and restart |
-| *Database not found / table missing* | Run `npm run db:setup` once |
-| *404 – action not found* | Stop the app, run `npm install`, then `npm run dev` |
-
-A step-by-step demo script is in [`DEMO_GUIDE.md`](DEMO_GUIDE.md).
-
 ## 👩‍💻 Team
 
 | Name | SRN | Focus |
 |---|---|---|
 | **Amrutha Kattimani** | PES1UG24CS054 | Frontend, documentation, MySQL |
 | **Samhitha Alluru** | PES1UG24CS050 | MongoDB, backend & authentication, testing |
-
-**Course instructor:** Dr. Nagasundari S · PES University, Department of Computer Science and Engineering
 
 ## 🔮 Future enhancements
 Vector / semantic search over complaints · online payments with receipts · e-mail/SMS reminders for overdue rent and expiring licences · document file uploads · mobile app · multi-tenant owners · Redis-based rate limiting
