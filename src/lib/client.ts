@@ -13,7 +13,12 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
     window.location.href = "/login";
     throw new Error("Session expired. Please sign in again.");
   }
-  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    if (data?.error) throw new Error(data.error);
+    if (res.status === 404) throw new Error("This action was not found on the server (404). Stop the app, run  npm install  then  npm run dev  again.");
+    if (res.status >= 500) throw new Error(`The server had a problem (${res.status}). Check the terminal running the app for details.`);
+    throw new Error(`Request failed (${res.status})`);
+  }
   return data as T;
 }
 

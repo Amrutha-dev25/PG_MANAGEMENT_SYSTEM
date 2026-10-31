@@ -34,39 +34,43 @@ export const GET = handler(async () => {
 
   const occupancy = await query("SELECT * FROM vw_property_occupancy ORDER BY Property_Name");
 
-  // ---------------- MongoDB aggregations
-  const db = await mongo();
-  const ratingByMeal = await db.collection("meal_feedback").aggregate([
-    { $group: { _id: { propertyId: "$propertyId", mealType: "$mealType" }, avgRating: { $avg: "$rating" }, reviews: { $sum: 1 } } },
-    { $project: { _id: 0, propertyId: "$_id.propertyId", mealType: "$_id.mealType", avgRating: { $round: ["$avgRating", 2] }, reviews: 1 } },
-    { $sort: { propertyId: 1, mealType: 1 } },
-  ]).toArray();
+  // ---------------- MongoDB aggregations (fail-soft: if MongoDB is down the SQL reports above still load)
+  let ratingByMeal: any[] = [], topTags: any[] = [], activityByAction: any[] = [], resolutionByCategory: any[] = [];
+  try {
+    const db = await mongo();
+    ratingByMeal = await db.collection("meal_feedback").aggregate([
+      { $group: { _id: { propertyId: "$propertyId", mealType: "$mealType" }, avgRating: { $avg: "$rating" }, reviews: { $sum: 1 } } },
+      { $project: { _id: 0, propertyId: "$_id.propertyId", mealType: "$_id.mealType", avgRating: { $round: ["$avgRating", 2] }, reviews: 1 } },
+      { $sort: { propertyId: 1, mealType: 1 } },
+    ]).toArray();
 
-  const topTags = await db.collection("meal_feedback").aggregate([
-    { $unwind: "$tags" }, { $group: { _id: "$tags", count: { $sum: 1 }, avgRating: { $avg: "$rating" } } },
-    { $project: { _id: 0, tag: "$_id", count: 1, avgRating: { $round: ["$avgRating", 1] } } },
-    { $sort: { count: -1, tag: 1 } }, { $limit: 8 },
-  ]).toArray();
+    topTags = await db.collection("meal_feedback").aggregate([
+      { $unwind: "$tags" }, { $group: { _id: "$tags", count: { $sum: 1 }, avgRating: { $avg: "$rating" } } },
+      { $project: { _id: 0, tag: "$_id", count: 1, avgRating: { $round: ["$avgRating", 1] } } },
+      { $sort: { count: -1, tag: 1 } }, { $limit: 8 },
+    ]).toArray();
 
-  const activityByAction = await db.collection("audit_logs").aggregate([
-    { $group: { _id: { role: "$actor.role", action: "$action" }, count: { $sum: 1 } } },
-    { $project: { _id: 0, role: "$_id.role", action: "$_id.action", count: 1 } }, { $sort: { count: -1 } }, { $limit: 10 },
-  ]).toArray();
+    activityByAction = await db.collection("audit_logs").aggregate([
+      { $group: { _id: { role: "$actor.role", action: "$action" }, count: { $sum: 1 } } },
+      { $project: { _id: 0, role: "$_id.role", action: "$_id.action", count: 1 } }, { $sort: { count: -1 } }, { $limit: 10 },
+    ]).toArray();
 
-  // cross-database: resolution time (MongoDB RESOLUTION events) joined with COMPLAINT.Date_Filed / Category (MySQL)
-  const resolutions = await db.collection("complaint_updates").aggregate([
-    { $match: { type: "RESOLUTION" } }, { $group: { _id: "$complaintNo", resolvedAt: { $min: "$createdAt" } } },
-  ]).toArray();
-  let resolutionByCategory: any[] = [];
-  if (resolutions.length) {
-    const rows = await query("SELECT Complaint_No, Category, Date_Filed FROM COMPLAINT WHERE Complaint_No IN (?)", [resolutions.map((r: any) => r._id)]);
-    const acc: Record<string, { sum: number; n: number }> = {};
-    for (const r of rows) {
-      const at = resolutions.find((x: any) => x._id === r.Complaint_No)!.resolvedAt as Date;
-      const days = Math.max(0, Math.round((at.getTime() - new Date(r.Date_Filed + "T00:00:00Z").getTime()) / 86400000));
-      (acc[r.Category] ||= { sum: 0, n: 0 }); acc[r.Category].sum += days; acc[r.Category].n += 1;
+    // cross-database: resolution time (MongoDB RESOLUTION events) joined with COMPLAINT.Date_Filed / Category (MySQL)
+    const resolutions = await db.collection("complaint_updates").aggregate([
+      { $match: { type: "RESOLUTION" } }, { $group: { _id: "$complaintNo", resolvedAt: { $min: "$createdAt" } } },
+    ]).toArray();
+    if (resolutions.length) {
+      const rows = await query("SELECT Complaint_No, Category, Date_Filed FROM COMPLAINT WHERE Complaint_No IN (?)", [resolutions.map((r: any) => r._id)]);
+      const acc: Record<string, { sum: number; n: number }> = {};
+      for (const r of rows) {
+        const at = resolutions.find((x: any) => x._id === r.Complaint_No)!.resolvedAt as Date;
+        const days = Math.max(0, Math.round((at.getTime() - new Date(r.Date_Filed + "T00:00:00Z").getTime()) / 86400000));
+        (acc[r.Category] ||= { sum: 0, n: 0 }); acc[r.Category].sum += days; acc[r.Category].n += 1;
+      }
+      resolutionByCategory = Object.entries(acc).map(([category, v]) => ({ category, avgDays: Math.round((v.sum / v.n) * 10) / 10, resolved: v.n })).sort((a, b) => b.avgDays - a.avgDays);
     }
-    resolutionByCategory = Object.entries(acc).map(([category, v]) => ({ category, avgDays: Math.round((v.sum / v.n) * 10) / 10, resolved: v.n })).sort((a, b) => b.avgDays - a.avgDays);
+  } catch (e) {
+    console.error("[reports] MongoDB section failed:", (e as Error).message);
   }
 
   return ok({ roomTypeRent, complaintsByCategory, duesAboveAverage, topPayers, residentsByCity, staffPerProperty, occupancy,

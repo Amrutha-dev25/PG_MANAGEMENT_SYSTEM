@@ -8,7 +8,7 @@ export const GET = handler(async (req: Request) => {
   const sp = new URL(req.url).searchParams;
   const property = sp.get("Property_ID");
   const dates = (await query("SELECT DISTINCT Menu_Date FROM MENU ORDER BY Menu_Date DESC LIMIT 60")).map((d: any) => d.Menu_Date as string);
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date(); const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; // local date, not UTC
   const date = sp.get("date") || (dates.includes(today) ? today : dates[0]) || today;
 
   const where = ["m.Menu_Date = ?"]; const params: any[] = [date];

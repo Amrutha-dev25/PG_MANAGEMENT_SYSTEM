@@ -44,7 +44,7 @@ test("no hard-coded credentials / secrets in source", () => {
 test("every API route enforces authentication", () => {
   const routes = walk(path.join(ROOT, "src/app/api")).filter((f) => f.endsWith("route.ts"));
   for (const r of routes) {
-    if (/auth[\\/](login|logout)/.test(r)) continue;
+    if (/auth[\\/](login|logout|register)/.test(r)) continue; // public endpoints by design (register validates Resident/Staff ID or signup code)
     const t = fs.readFileSync(r, "utf8");
     assert.match(t, /requireSession|getSession/, `${path.relative(ROOT, r)} does not check the session`);
   }

@@ -1,0 +1,36 @@
+{
+  "name": "pg-accommodation-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PG Accommodation Management System - DBMS Level 3 project (Next.js + MySQL + MongoDB)",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:setup": "node scripts/setup-mysql.mjs --reset && node scripts/setup-mongo.mjs --reset",
+    "db:mysql": "node scripts/setup-mysql.mjs",
+    "db:mongo": "node scripts/setup-mongo.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check-setup.mjs"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "jose": "^6.0.0",
+    "lucide-react": "^0.468.0",
+    "mongodb": "^6.12.0",
+    "mysql2": "^3.11.0",
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.2"
+  }
+}

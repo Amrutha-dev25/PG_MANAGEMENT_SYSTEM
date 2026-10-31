@@ -1,18 +1,27 @@
 import { requireSession } from "@/lib/auth";
 import { handler, ok, readJson } from "@/lib/http";
-import { getResource, updateResource, deleteResource } from "@/lib/crud";
+import { deleteResource, getResource, updateResource } from "@/lib/crud";
 
-type Ctx = { params: Promise<{ resource: string; id: string }> };
+// Fetch one record. ResourcePage uses this when the user clicks Edit.
+export const GET = handler(async (req: Request, { params }: { params: Promise<{ resource: string; id: string }> }) => {
+  const session = await requireSession();
+  const { resource, id } = await params;
+  return ok(await getResource(resource, session, id));
+});
 
-export const GET = handler(async (_req: Request, { params }: Ctx) => {
-  const s = await requireSession(); const { resource, id } = await params;
-  return ok(await getResource(resource, s, decodeURIComponent(id)));
+// Update one record. ResourcePage submits edits with PUT.
+export const PUT = handler(async (req: Request, { params }: { params: Promise<{ resource: string; id: string }> }) => {
+  const session = await requireSession();
+  const { resource, id } = await params;
+  return ok(await updateResource(resource, session, id, await readJson(req)));
 });
-export const PUT = handler(async (req: Request, { params }: Ctx) => {
-  const s = await requireSession(); const { resource, id } = await params;
-  return ok(await updateResource(resource, s, decodeURIComponent(id), await readJson(req)));
-});
-export const DELETE = handler(async (_req: Request, { params }: Ctx) => {
-  const s = await requireSession(); const { resource, id } = await params;
-  return ok(await deleteResource(resource, s, decodeURIComponent(id)));
+
+// Also accept PATCH for clients that send partial updates.
+export const PATCH = PUT;
+
+// Delete one record.
+export const DELETE = handler(async (req: Request, { params }: { params: Promise<{ resource: string; id: string }> }) => {
+  const session = await requireSession();
+  const { resource, id } = await params;
+  return ok(await deleteResource(resource, session, id));
 });

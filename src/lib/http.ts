@@ -31,8 +31,22 @@ export function fail(e: any) {
   if (code === "ER_BAD_NULL_ERROR") return NextResponse.json({ error: "A required value is missing." }, { status: 400 });
   if (code === "ER_TRUNCATED_WRONG_VALUE" || code === "ER_WRONG_VALUE" || code === "ER_TRUNCATED_WRONG_VALUE_FOR_FIELD")
     return NextResponse.json({ error: "A value has an invalid format." }, { status: 400 });
-  if (code === "ECONNREFUSED" || code === "PROTOCOL_CONNECTION_LOST" || e?.name === "MongoServerSelectionError")
-    return NextResponse.json({ error: "Database is not reachable. Check that MySQL and MongoDB are running." }, { status: 503 });
+  if (code === "ECONNREFUSED" || code === "ETIMEDOUT" || code === "ENOTFOUND" || code === "PROTOCOL_CONNECTION_LOST" ||
+      e?.name === "MongoServerSelectionError" || e?.name === "MongoNetworkError" || e?.name === "MongoNetworkTimeoutError")
+    return NextResponse.json({ error: "Database is not reachable. Check that MySQL and MongoDB are running and that .env points to them." }, { status: 503 });
+  // Setup problems (first run on a new machine) - say exactly what to do instead of a vague 500
+  if (code === "ER_ACCESS_DENIED_ERROR" || errno === 1045)
+    return NextResponse.json({ error: "MySQL refused the login. Check MYSQL_USER and MYSQL_PASSWORD in your .env file, then restart the app." }, { status: 503 });
+  if (code === "ER_BAD_DB_ERROR" || errno === 1049)
+    return NextResponse.json({ error: "MySQL database not found. Run  npm run db:setup  once to create it." }, { status: 503 });
+  if (code === "ER_NO_SUCH_TABLE" || errno === 1146 || code === "ER_SP_DOES_NOT_EXIST" || errno === 1305 || errno === 1356)
+    return NextResponse.json({ error: "A database table, view or procedure is missing. Run  npm run db:setup  to rebuild the database." }, { status: 503 });
+  if (e?.name === "MongoServerError" && (e?.code === 13 || e?.code === 18))
+    return NextResponse.json({ error: "MongoDB refused the login. Check MONGODB_URI in your .env file." }, { status: 503 });
+  if (e?.name === "MongoServerError" && e?.code === 121)
+    return NextResponse.json({ error: "MongoDB rejected the data (schema validation)." }, { status: 400 });
+  if (/Missing environment variable|AUTH_SECRET/.test(String(e?.message)))
+    return NextResponse.json({ error: String(e.message) }, { status: 500 });
   console.error("[api error]", e);
   return NextResponse.json({ error: "Something went wrong on the server." }, { status: 500 });
 }
